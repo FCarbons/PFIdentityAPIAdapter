@@ -28,12 +28,15 @@ public class Const {
 	public static final String ACTIVE = "active";
 	public static final String STATUS = "status";
 	public static final String CODE = "code";
+	public static final String PASSWORD_CHANGE = "passwordChange";
+	
 	public static final String GLOBAL_UID = "globalUID";
 	public static final String USER_PASSWORD = "userPassword";
 	
 	public static final int TOKEN_DURATION_MINUTES = 10;
 	
 	public static final String MESSAGE_TEMPLATE_REGISTRATION_HTML = "message-template-register.html";
+	public static final String MESSAGE_TEMPLATE_PASSWORD_CHANGED = "message-template-password-changed.html";
 	
 	
 	

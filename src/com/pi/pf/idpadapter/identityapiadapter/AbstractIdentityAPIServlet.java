@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
@@ -32,6 +33,7 @@ import com.pingidentity.email.util.EmailHelper;
 import com.unboundid.ldap.sdk.Attribute;
 import com.unboundid.ldap.sdk.LDAPConnection;
 import com.unboundid.ldap.sdk.LDAPException;
+import com.unboundid.ldap.sdk.SearchResultEntry;
 
 public class AbstractIdentityAPIServlet extends HttpServlet {
 
@@ -141,6 +143,15 @@ public class AbstractIdentityAPIServlet extends HttpServlet {
 		emailHelper.sendEmail(Const.MESSAGE_TEMPLATE_REGISTRATION_HTML, requestData.getString(Const.EMAIL_ATTRIBUTE_NAME), true, substitutionMap);
 		log.debug("Mail sent");
 	}
+	
+	protected void sendPasswordResetCompleteEmail(JSONObject requestData) throws LDAPException, JSONException {
+		log.debug("Starting sendPasswordResetCompleteEmail");
+		Map<String, String> substitutionMap = new HashMap<String, String>();
+		substitutionMap.put("RECEIVER", requestData.getString(Const.EMAIL_ATTRIBUTE_NAME));
+		EmailHelper emailHelper = new EmailHelper();
+		emailHelper.sendEmail(Const.MESSAGE_TEMPLATE_PASSWORD_CHANGED, requestData.getString(Const.EMAIL_ATTRIBUTE_NAME), true, substitutionMap);
+		log.debug("Mail sent");
+	}
 
 	protected void sendResponse(HttpServletResponse resp, JSONObject responseJson, int responseCode) throws IOException {
 		resp.setContentType("application/json");
@@ -166,6 +177,27 @@ public class AbstractIdentityAPIServlet extends HttpServlet {
 		log.debug(codeAttributes.toString());
 		JSONObject codeAttributesJson = new JSONObject(codeAttributes);
 		return codeAttributesJson;
+	}
+
+	protected boolean isOTPValid(JSONObject requestData) throws LDAPException, JSONException {
+		log.debug("Starting validateRequest");
+		LDAPConnection connection = getLDAPConnection();
+		SearchResultEntry result = connection.getEntry(getDn(requestData));
+		if (result == null) {
+			log.debug("Entry not found");
+			return false;
+		}
+		log.debug("Found entry " + result.toString());
+		
+		String otp = result.getAttributeValue(Const.CODE);
+		if (StringUtils.isEmpty(otp)) {
+			log.debug("Stored code empty");
+			return false;
+		}
+		JSONObject storedCodeJSON = new JSONObject(otp);
+		log.debug("Stored code " + storedCodeJSON.toString());
+		return validateCode(requestData.getString(Const.CODE), storedCodeJSON.getString(Constants.ATTR_KEY_CODE),
+				storedCodeJSON.getString(Constants.ATTR_KEY_SALT), storedCodeJSON.getString(Constants.ATTR_KEY_TIME));
 	}
 
 }

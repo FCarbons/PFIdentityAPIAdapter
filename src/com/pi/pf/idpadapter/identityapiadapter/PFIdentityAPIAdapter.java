@@ -138,6 +138,8 @@ public class PFIdentityAPIAdapter implements IdpAuthenticationAdapterV2 {
 		HandlerRegistry.registerHandler("/identityapi/registration", new RegistrationServlet(configuration));
 		HandlerRegistry.registerHandler("/identityapi/validation", new ValidationServlet(configuration));
 		HandlerRegistry.registerHandler("/identityapi/activation", new ActivationServlet(configuration));
+		HandlerRegistry.registerHandler("/identityapi/passwordReset", new CompletePasswordResetServlet(configuration));
+		HandlerRegistry.registerHandler("/identityapi/passwordResetInit", new InitiatePasswordResetServlet(configuration));
 	}
 	
 	
@@ -152,9 +154,6 @@ public class PFIdentityAPIAdapter implements IdpAuthenticationAdapterV2 {
 		attributes.add(new Attribute("userPassword","Password01"));
 		attributes.add(new Attribute("status","registered"));
 		c.add("mail="+mail+",ou=People,dc=pingdemo,dc=com", attributes);
-		
-		
-		
 	}
 	
 

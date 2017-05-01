@@ -1,6 +1,8 @@
 package com.pi.pf.idpadapter.identityapiadapter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -18,12 +20,16 @@ import com.unboundid.ldap.sdk.LDAPException;
 import com.unboundid.ldap.sdk.Modification;
 import com.unboundid.ldap.sdk.ModificationType;
 
-public class ActivationServlet extends AbstractIdentityAPIServlet implements Handler {
+/**
+ * Completes a password reset, receiving email, otp and new password.
+ * 
+ */
+public class CompletePasswordResetServlet extends AbstractIdentityAPIServlet implements Handler {
 
 	private static final long serialVersionUID = 1L;
-	final Log log = LogFactory.getLog(this.getClass());
+	private final Log log = LogFactory.getLog(this.getClass());
 
-	public ActivationServlet(Configuration configuration) {
+	public CompletePasswordResetServlet(Configuration configuration) {
 		super(configuration);
 		log.debug("Creating ActivationServlet " + configuration);
 	}
@@ -33,14 +39,12 @@ public class ActivationServlet extends AbstractIdentityAPIServlet implements Han
 		log.debug("*** Starting handle");
 
 		try {
-			JSONObject activationReqeust = getRequestJSONObject(req);
-			if (isOTPValid(activationReqeust)) {
-				activateIdentity(activationReqeust);
-				sendResponse(resp, null, HttpServletResponse.SC_CREATED);
-			} else {
-				sendResponse(resp, null, HttpServletResponse.SC_BAD_REQUEST);
+			JSONObject requestJson = getRequestJSONObject(req);
+			if (isOTPValid(requestJson)) {
+				resetPassword(requestJson);
+				sendPasswordResetCompleteEmail(requestJson);
 			}
-			
+			sendResponse(resp, null, HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
 			sendResponse(resp, null, HttpServletResponse.SC_BAD_REQUEST);
 			log.error("Error activating the identity", e);
@@ -48,15 +52,17 @@ public class ActivationServlet extends AbstractIdentityAPIServlet implements Han
 		log.debug("*** Exiting handle");
 	}
 
-	private void activateIdentity(JSONObject requestData) throws LDAPException, JSONException {
+	private void resetPassword(JSONObject requestData) throws LDAPException, JSONException {
 		log.debug("Starting activateIdentity");
 		LDAPConnection connection = getLDAPConnection();
-		Modification mod = new Modification(ModificationType.REPLACE, Const.STATUS, Const.ACTIVE);
-		connection.modify(getDn(requestData), mod);
-		log.debug("Identity activated");
+		List<Modification> mods = new ArrayList<Modification>();
+		mods.add(new Modification(ModificationType.REPLACE, Const.STATUS, Const.ACTIVE));
+		mods.add(new Modification(ModificationType.REPLACE, Const.USER_PASSWORD, requestData.getString(Const.USER_PASSWORD)));
+		connection.modify(getDn(requestData), mods);
+		log.debug("Password reset");
 	}
 
 	public static void main(String[] args) {
-		
+
 	}
 }

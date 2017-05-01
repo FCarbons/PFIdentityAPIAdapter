@@ -2,8 +2,6 @@ package com.pi.pf.idpadapter.identityapiadapter;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import javax.servlet.ServletException;
@@ -17,7 +15,6 @@ import org.json.JSONObject;
 import org.sourceid.saml20.adapter.conf.Configuration;
 import org.sourceid.websso.servlet.adapter.Handler;
 
-import com.pingidentity.adapters.htmlform.pwdreset.common.Constants;
 import com.pingidentity.adapters.htmlform.pwdreset.model.GeneratedCode;
 import com.unboundid.ldap.sdk.Attribute;
 import com.unboundid.ldap.sdk.LDAPConnection;
@@ -77,10 +74,6 @@ public class RegistrationServlet extends AbstractIdentityAPIServlet implements H
 	}
 
 	public static void main(String[] args) {
-		Map <String,String> codeAttributes = new HashMap <String,String > ();
-		codeAttributes.put(Constants.ATTR_KEY_CODE, "A");
-		codeAttributes.put(Constants.ATTR_KEY_TIME, "B");
-		JSONObject codeAttributesJson = new JSONObject(codeAttributes);
-		System.out.println(codeAttributesJson.toString());
+		
 	}
 }
