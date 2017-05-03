@@ -74,10 +74,18 @@ public class AbstractIdentityAPIServlet extends HttpServlet {
 		return ldapConnection;
 	}
 
-	protected String getDn(JSONObject userData) throws JSONException {
+	protected String getGlobalIDDn(JSONObject userData) throws JSONException {
 		String baseDN = configuration.getFieldValue(Const.BASE_DN_NAME);
 		String mailAddress = userData.getString(Const.EMAIL_ATTRIBUTE_NAME);
-		String dn = Const.EMAIL_ATTRIBUTE_NAME + "=" + mailAddress + "," + baseDN;
+		String dn = Const.EMAIL_ATTRIBUTE_NAME + "=" + mailAddress + "," +baseDN.replaceAll("%dir%", "global");
+		log.debug("Entry dn " + dn);
+		return dn;
+	}
+	
+	protected String getLinkedIDDn(JSONObject userData) throws JSONException {
+		String baseDN = configuration.getFieldValue(Const.BASE_DN_NAME);
+		String linkedUID = userData.getString(Const.MOBILE_NUMBER);
+		String dn = Const.LINKED_UID + "=" + linkedUID + "," + baseDN.replaceAll("%dir%", "it");
 		log.debug("Entry dn " + dn);
 		return dn;
 	}
@@ -134,13 +142,13 @@ public class AbstractIdentityAPIServlet extends HttpServlet {
 		return CodeGenerationUtil.getGeneratedCode(conf);
 	}
 
-	protected void sendMailCode(JSONObject requestData, String code) throws LDAPException, JSONException {
+	protected void sendMailCode(JSONObject requestData, String code, String template) throws LDAPException, JSONException {
 		log.debug("Starting sendMailCode with code " + code);
 		Map<String, String> substitutionMap = new HashMap<String, String>();
 		substitutionMap.put("RECEIVER", requestData.getString(Const.EMAIL_ATTRIBUTE_NAME));
 		substitutionMap.put("CODE", code);
 		EmailHelper emailHelper = new EmailHelper();
-		emailHelper.sendEmail(Const.MESSAGE_TEMPLATE_REGISTRATION_HTML, requestData.getString(Const.EMAIL_ATTRIBUTE_NAME), true, substitutionMap);
+		emailHelper.sendEmail(template, requestData.getString(Const.EMAIL_ATTRIBUTE_NAME), true, substitutionMap);
 		log.debug("Mail sent");
 	}
 	
@@ -182,7 +190,7 @@ public class AbstractIdentityAPIServlet extends HttpServlet {
 	protected boolean isOTPValid(JSONObject requestData) throws LDAPException, JSONException {
 		log.debug("Starting validateRequest");
 		LDAPConnection connection = getLDAPConnection();
-		SearchResultEntry result = connection.getEntry(getDn(requestData));
+		SearchResultEntry result = connection.getEntry(getGlobalIDDn(requestData));
 		if (result == null) {
 			log.debug("Entry not found");
 			return false;
@@ -198,6 +206,24 @@ public class AbstractIdentityAPIServlet extends HttpServlet {
 		log.debug("Stored code " + storedCodeJSON.toString());
 		return validateCode(requestData.getString(Const.CODE), storedCodeJSON.getString(Constants.ATTR_KEY_CODE),
 				storedCodeJSON.getString(Constants.ATTR_KEY_SALT), storedCodeJSON.getString(Constants.ATTR_KEY_TIME));
+	}
+
+	protected boolean userExists(JSONObject requestData) throws LDAPException, JSONException {
+		log.debug("Starting userExists");
+		LDAPConnection connection = getLDAPConnection();
+		SearchResultEntry result = connection.getEntry(getGlobalIDDn(requestData));
+		if (result == null) {
+			log.debug("User not found, returning false");
+			return false;
+		}
+		log.debug("User found, returning true	");
+		return true;
+	}
+	
+	
+	public static void main(String[] args) {
+		String str = "ou=identities,ou=%dir%,dc=veon,dc=com";
+		System.out.print(str.replaceAll("%dir%", "ciao"));
 	}
 
 }

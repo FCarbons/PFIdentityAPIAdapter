@@ -32,11 +32,17 @@ public class Const {
 	
 	public static final String GLOBAL_UID = "globalUID";
 	public static final String USER_PASSWORD = "userPassword";
+	public static final String LINKED_UID = "linkedUID";
+	public static final String TOKEN = "token";
+	public static final String MOBILE_NUMBER = "mobileNumber";
 	
 	public static final int TOKEN_DURATION_MINUTES = 10;
 	
-	public static final String MESSAGE_TEMPLATE_REGISTRATION_HTML = "message-template-register.html";
-	public static final String MESSAGE_TEMPLATE_PASSWORD_CHANGED = "message-template-password-changed.html";
+	public static final String MESSAGE_TEMPLATE_REGISTRATION_HTML = "message-template-api-register.html";
+	public static final String MESSAGE_TEMPLATE_PASSWORD_RESET_HTML = "message-template-api-reset.html";
+	public static final String MESSAGE_TEMPLATE_PASSWORD_CHANGED = "message-template-api-pwd-changed.html";
+	
+	public static final String LINKED_ID_OBJECTCLASS = "VeonLinkedIdentity";
 	
 	
 	

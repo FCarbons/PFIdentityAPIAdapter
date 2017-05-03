@@ -140,6 +140,7 @@ public class PFIdentityAPIAdapter implements IdpAuthenticationAdapterV2 {
 		HandlerRegistry.registerHandler("/identityapi/activation", new ActivationServlet(configuration));
 		HandlerRegistry.registerHandler("/identityapi/passwordReset", new CompletePasswordResetServlet(configuration));
 		HandlerRegistry.registerHandler("/identityapi/passwordResetInit", new InitiatePasswordResetServlet(configuration));
+		HandlerRegistry.registerHandler("/identityapi/identityLinking", new LinkIdentityServlet(configuration));
 	}
 	
 	

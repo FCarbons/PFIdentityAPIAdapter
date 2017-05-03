@@ -39,7 +39,7 @@ public class RegistrationServlet extends AbstractIdentityAPIServlet implements H
 			JSONObject registrationRequest = getRequestJSONObject(req);
 			GeneratedCode generatedCode = generateCode (registrationRequest);
 			JSONObject responseJson = registerIdentity(registrationRequest,generatedCode);
-			sendMailCode(registrationRequest,generatedCode.getCode());
+			sendMailCode(registrationRequest,generatedCode.getCode(),Const.MESSAGE_TEMPLATE_REGISTRATION_HTML);
 			sendResponse(resp, responseJson, HttpServletResponse.SC_CREATED);
 		} catch (Exception e) {
 			sendResponse(resp, null, HttpServletResponse.SC_BAD_REQUEST);
@@ -54,7 +54,7 @@ public class RegistrationServlet extends AbstractIdentityAPIServlet implements H
 		JSONObject codeAttributesJson = getCodeAttributesJson(generatedCode);
 		LDAPConnection connection = getLDAPConnection();
 		Collection<Attribute> set = getLDAPAttributeSet(globalUID, requestData, codeAttributesJson);
-		connection.add(getDn(requestData), set);
+		connection.add(getGlobalIDDn(requestData), set);
 		
 		JSONObject responseJson = new JSONObject(requestData, JSONObject.getNames(requestData));
 		responseJson.remove(Const.USER_PASSWORD);

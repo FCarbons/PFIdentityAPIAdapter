@@ -52,7 +52,7 @@ public class ActivationServlet extends AbstractIdentityAPIServlet implements Han
 		log.debug("Starting activateIdentity");
 		LDAPConnection connection = getLDAPConnection();
 		Modification mod = new Modification(ModificationType.REPLACE, Const.STATUS, Const.ACTIVE);
-		connection.modify(getDn(requestData), mod);
+		connection.modify(getGlobalIDDn(requestData), mod);
 		log.debug("Identity activated");
 	}
 

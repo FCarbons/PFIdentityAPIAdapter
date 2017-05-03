@@ -34,7 +34,7 @@ public class ValidationServlet extends AbstractIdentityAPIServlet implements Han
 
 	public ValidationServlet(Configuration configuration) {
 		super(configuration);
-		log.debug("Creating RegistrationServlet " + configuration);
+		log.debug("Creating ValidationServlet " + configuration);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class ValidationServlet extends AbstractIdentityAPIServlet implements Han
 			if (isRegistered(request)) {
 				GeneratedCode generatedCode = generateCode(request);
 				updateCode(request, generatedCode);
-				sendMailCode(request, generatedCode.getCode());
+				sendMailCode(request, generatedCode.getCode(),Const.MESSAGE_TEMPLATE_REGISTRATION_HTML);
 			}
 			// always send the same response (even if record does not exist or is in the wrong state)
 			sendResponse(resp, null, HttpServletResponse.SC_CREATED);
@@ -60,7 +60,7 @@ public class ValidationServlet extends AbstractIdentityAPIServlet implements Han
 	private boolean isRegistered(JSONObject requestData) throws LDAPException, JSONException {
 		log.debug("Starting validateRequest");
 		LDAPConnection connection = getLDAPConnection();
-		SearchResultEntry result = connection.getEntry(getDn(requestData));
+		SearchResultEntry result = connection.getEntry(getGlobalIDDn(requestData));
 		if (result == null || !result.getAttributeValue(Const.STATUS).equalsIgnoreCase(Const.REGISTERED)) {
 			return false;
 		}
@@ -72,7 +72,7 @@ public class ValidationServlet extends AbstractIdentityAPIServlet implements Han
 		LDAPConnection connection = getLDAPConnection();
 		JSONObject codeAttributesJson = getCodeAttributesJson(generatedCode);
 		Modification mod = new Modification(ModificationType.REPLACE, Const.CODE, codeAttributesJson.toString());
-		connection.modify(getDn(requestData), mod);
+		connection.modify(getGlobalIDDn(requestData), mod);
 		log.debug("Exiting updateCode");
 	}
 

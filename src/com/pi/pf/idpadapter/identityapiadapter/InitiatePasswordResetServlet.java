@@ -20,7 +20,6 @@ import com.unboundid.ldap.sdk.LDAPConnection;
 import com.unboundid.ldap.sdk.LDAPException;
 import com.unboundid.ldap.sdk.Modification;
 import com.unboundid.ldap.sdk.ModificationType;
-import com.unboundid.ldap.sdk.SearchResultEntry;
 
 /**
  * Initiates a password reset, sending an OTP to the user and 
@@ -33,7 +32,7 @@ public class InitiatePasswordResetServlet extends AbstractIdentityAPIServlet imp
 
 	public InitiatePasswordResetServlet(Configuration configuration) {
 		super(configuration);
-		log.debug("Creating RegistrationServlet " + configuration);
+		log.debug("Creating InitiatePasswordResetServlet " + configuration);
 	}
 
 	@Override
@@ -45,7 +44,7 @@ public class InitiatePasswordResetServlet extends AbstractIdentityAPIServlet imp
 			if (userExists(request)) {
 				GeneratedCode generatedCode = generateCode(request);
 				updateCodeAndStatus(request, generatedCode);
-				sendMailCode(request, generatedCode.getCode());
+				sendMailCode(request, generatedCode.getCode(),Const.MESSAGE_TEMPLATE_PASSWORD_RESET_HTML);
 			}
 			// always send the same response (even if record does not exist or is in the wrong state)
 			sendResponse(resp, null, HttpServletResponse.SC_CREATED);
@@ -54,16 +53,6 @@ public class InitiatePasswordResetServlet extends AbstractIdentityAPIServlet imp
 			log.error("Error creating the new identity", e);
 		}
 		log.debug("*** Exiting handle");
-	}
-
-	private boolean userExists (JSONObject requestData) throws LDAPException, JSONException {
-		log.debug("Starting isRegistered");
-		LDAPConnection connection = getLDAPConnection();
-		SearchResultEntry result = connection.getEntry(getDn(requestData));
-		if (result == null) {
-			return false;
-		}
-		return true;
 	}
 
 	private void updateCodeAndStatus(JSONObject requestData, GeneratedCode generatedCode) throws LDAPException, JSONException {
@@ -75,7 +64,7 @@ public class InitiatePasswordResetServlet extends AbstractIdentityAPIServlet imp
 		mods.add(new Modification(ModificationType.REPLACE, Const.STATUS, Const.PASSWORD_CHANGE));
 		mods.add(new Modification(ModificationType.REPLACE, Const.CODE, codeAttributesJson.toString()));
 		
-		connection.modify(getDn(requestData), mods);
+		connection.modify(getGlobalIDDn(requestData), mods);
 		log.debug("Exiting updateCode");
 	}
 

@@ -31,7 +31,7 @@ public class CompletePasswordResetServlet extends AbstractIdentityAPIServlet imp
 
 	public CompletePasswordResetServlet(Configuration configuration) {
 		super(configuration);
-		log.debug("Creating ActivationServlet " + configuration);
+		log.debug("Creating CompletePasswordResetServlet " + configuration);
 	}
 
 	@Override
@@ -58,7 +58,7 @@ public class CompletePasswordResetServlet extends AbstractIdentityAPIServlet imp
 		List<Modification> mods = new ArrayList<Modification>();
 		mods.add(new Modification(ModificationType.REPLACE, Const.STATUS, Const.ACTIVE));
 		mods.add(new Modification(ModificationType.REPLACE, Const.USER_PASSWORD, requestData.getString(Const.USER_PASSWORD)));
-		connection.modify(getDn(requestData), mods);
+		connection.modify(getGlobalIDDn(requestData), mods);
 		log.debug("Password reset");
 	}
 
