@@ -1,5 +1,6 @@
 package com.pi.pf.idpadapter.identityapiadapter;
 
+
 public class Const {
 	public static final String ATTR_OAUTH_CLIENT_NAME = "OAuth client";
 	public static final String ATTR_OAUTH_CLIENT_LABEL = "OAuth client in the JWT token sent to the external app";
@@ -35,6 +36,7 @@ public class Const {
 	public static final String LINKED_UID = "linkedUID";
 	public static final String TOKEN = "token";
 	public static final String MOBILE_NUMBER = "mobileNumber";
+	public static final String COUNTRY = "country";
 	
 	public static final int TOKEN_DURATION_MINUTES = 10;
 	
@@ -43,7 +45,7 @@ public class Const {
 	public static final String MESSAGE_TEMPLATE_PASSWORD_CHANGED = "message-template-api-pwd-changed.html";
 	
 	public static final String LINKED_ID_OBJECTCLASS = "VeonLinkedIdentity";
-	
-	
+	public static final String SUCCESS = "success";
+	public static final String RESULT = "result";
 	
 }

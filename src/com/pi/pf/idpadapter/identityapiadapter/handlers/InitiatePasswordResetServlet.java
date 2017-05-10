@@ -1,4 +1,4 @@
-package com.pi.pf.idpadapter.identityapiadapter;
+package com.pi.pf.idpadapter.identityapiadapter.handlers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,11 +10,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.sourceid.saml20.adapter.conf.Configuration;
 import org.sourceid.websso.servlet.adapter.Handler;
 
+import com.pi.pf.idpadapter.identityapiadapter.Const;
+import com.pi.pf.idpadapter.identityapiadapter.ErrorMessage;
+import com.pi.pf.idpadapter.identityapiadapter.IdentityAPIException;
 import com.pingidentity.adapters.htmlform.pwdreset.model.GeneratedCode;
 import com.unboundid.ldap.sdk.LDAPConnection;
 import com.unboundid.ldap.sdk.LDAPException;
@@ -26,7 +28,10 @@ import com.unboundid.ldap.sdk.ModificationType;
  *
  */
 public class InitiatePasswordResetServlet extends AbstractIdentityAPIServlet implements Handler {
-
+	
+	
+	private String[] mandatoryFields = { Const.EMAIL_ATTRIBUTE_NAME };
+	
 	private static final long serialVersionUID = 1L;
 	final Log log = LogFactory.getLog(this.getClass());
 
@@ -41,21 +46,22 @@ public class InitiatePasswordResetServlet extends AbstractIdentityAPIServlet imp
 
 		try {
 			JSONObject request = getRequestJSONObject(req);
-			if (userExists(request)) {
+			mandadoryFieldsExist(request, mandatoryFields);
+			if (userExistsByEmail(request)) {
 				GeneratedCode generatedCode = generateCode(request);
 				updateCodeAndStatus(request, generatedCode);
 				sendMailCode(request, generatedCode.getCode(),Const.MESSAGE_TEMPLATE_PASSWORD_RESET_HTML);
 			}
 			// always send the same response (even if record does not exist or is in the wrong state)
-			sendResponse(resp, null, HttpServletResponse.SC_CREATED);
-		} catch (Exception e) {
-			sendResponse(resp, null, HttpServletResponse.SC_BAD_REQUEST);
-			log.error("Error creating the new identity", e);
+			sendResponse(resp, getSuccessResponseJSON(), HttpServletResponse.SC_OK);
+		} catch (IdentityAPIException e) {
+			log.error(e);
+			sendResponse(resp,e.getError());
 		}
 		log.debug("*** Exiting handle");
 	}
 
-	private void updateCodeAndStatus(JSONObject requestData, GeneratedCode generatedCode) throws LDAPException, JSONException {
+	private void updateCodeAndStatus(JSONObject requestData, GeneratedCode generatedCode) throws IdentityAPIException {
 		log.debug("Starting updateCode");
 		LDAPConnection connection = getLDAPConnection();
 		JSONObject codeAttributesJson = getCodeAttributesJson(generatedCode);
@@ -64,7 +70,12 @@ public class InitiatePasswordResetServlet extends AbstractIdentityAPIServlet imp
 		mods.add(new Modification(ModificationType.REPLACE, Const.STATUS, Const.PASSWORD_CHANGE));
 		mods.add(new Modification(ModificationType.REPLACE, Const.CODE, codeAttributesJson.toString()));
 		
-		connection.modify(getGlobalIDDn(requestData), mods);
+		try {
+			connection.modify(getGlobalIDDn(requestData), mods);
+		} catch (LDAPException e) {
+			log.error(e);
+			throw new IdentityAPIException(new ErrorMessage(ErrorMessage.GENERIC_LDAP_ERROR));
+		}
 		log.debug("Exiting updateCode");
 	}
 

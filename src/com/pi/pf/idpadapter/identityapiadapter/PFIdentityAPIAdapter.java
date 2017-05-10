@@ -28,6 +28,13 @@ import org.sourceid.saml20.adapter.state.TransactionalStateSupport;
 import org.sourceid.websso.bindings.FormPost;
 import org.sourceid.websso.servlet.adapter.HandlerRegistry;
 
+import com.pi.pf.idpadapter.identityapiadapter.handlers.ActivationServlet;
+import com.pi.pf.idpadapter.identityapiadapter.handlers.CompletePasswordResetServlet;
+import com.pi.pf.idpadapter.identityapiadapter.handlers.GetUserStatusServlet;
+import com.pi.pf.idpadapter.identityapiadapter.handlers.InitiatePasswordResetServlet;
+import com.pi.pf.idpadapter.identityapiadapter.handlers.LinkIdentityServlet;
+import com.pi.pf.idpadapter.identityapiadapter.handlers.RegistrationServlet;
+import com.pi.pf.idpadapter.identityapiadapter.handlers.ValidationServlet;
 import com.pingidentity.sdk.AuthnAdapterResponse;
 import com.pingidentity.sdk.AuthnAdapterResponse.AUTHN_STATUS;
 import com.pingidentity.sdk.IdpAuthenticationAdapterV2;
@@ -141,6 +148,7 @@ public class PFIdentityAPIAdapter implements IdpAuthenticationAdapterV2 {
 		HandlerRegistry.registerHandler("/identityapi/passwordReset", new CompletePasswordResetServlet(configuration));
 		HandlerRegistry.registerHandler("/identityapi/passwordResetInit", new InitiatePasswordResetServlet(configuration));
 		HandlerRegistry.registerHandler("/identityapi/identityLinking", new LinkIdentityServlet(configuration));
+		HandlerRegistry.registerHandler("/identityapi/userStatus", new GetUserStatusServlet(configuration));
 	}
 	
 	

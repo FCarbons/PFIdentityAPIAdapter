@@ -1,4 +1,4 @@
-package com.pi.pf.idpadapter.identityapiadapter;
+package com.pi.pf.idpadapter.identityapiadapter.handlers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,17 +15,23 @@ import org.json.JSONObject;
 import org.sourceid.saml20.adapter.conf.Configuration;
 import org.sourceid.websso.servlet.adapter.Handler;
 
+import com.pi.pf.idpadapter.identityapiadapter.Const;
+import com.pi.pf.idpadapter.identityapiadapter.ErrorMessage;
+import com.pi.pf.idpadapter.identityapiadapter.IdentityAPIException;
 import com.unboundid.ldap.sdk.LDAPConnection;
 import com.unboundid.ldap.sdk.LDAPException;
 import com.unboundid.ldap.sdk.Modification;
 import com.unboundid.ldap.sdk.ModificationType;
+import com.unboundid.ldap.sdk.SearchResultEntry;
 
 /**
  * Completes a password reset, receiving email, otp and new password.
  * 
  */
 public class CompletePasswordResetServlet extends AbstractIdentityAPIServlet implements Handler {
-
+	
+	private String[] mandatoryFields = { Const.EMAIL_ATTRIBUTE_NAME, Const.USER_PASSWORD, Const.CODE };
+	
 	private static final long serialVersionUID = 1L;
 	private final Log log = LogFactory.getLog(this.getClass());
 
@@ -40,26 +46,38 @@ public class CompletePasswordResetServlet extends AbstractIdentityAPIServlet imp
 
 		try {
 			JSONObject requestJson = getRequestJSONObject(req);
-			if (isOTPValid(requestJson)) {
-				resetPassword(requestJson);
-				sendPasswordResetCompleteEmail(requestJson);
-			}
-			sendResponse(resp, null, HttpServletResponse.SC_CREATED);
-		} catch (Exception e) {
-			sendResponse(resp, null, HttpServletResponse.SC_BAD_REQUEST);
+			mandadoryFieldsExist(requestJson, mandatoryFields);
+			validateOTP(requestJson, getGlobalIdentity(requestJson));
+			resetPassword(requestJson);
+			sendPasswordResetCompleteEmail(requestJson);
+			sendResponse(resp, getSuccessResponseJSON(), HttpServletResponse.SC_OK);
+		} catch (IdentityAPIException e) {
+			sendResponse(resp, e.getError());
 			log.error("Error activating the identity", e);
 		}
 		log.debug("*** Exiting handle");
 	}
 
-	private void resetPassword(JSONObject requestData) throws LDAPException, JSONException {
-		log.debug("Starting activateIdentity");
+	private void resetPassword(JSONObject requestData) throws IdentityAPIException {
+		log.debug("Starting resetPassword");
+		String password;
+		try {
+			password = requestData.getString(Const.USER_PASSWORD);
+		} catch (JSONException e1) {
+			log.error (e1);
+			throw new IdentityAPIException(new ErrorMessage(ErrorMessage.MISSING_INPUT_DATA));
+		}
 		LDAPConnection connection = getLDAPConnection();
 		List<Modification> mods = new ArrayList<Modification>();
 		mods.add(new Modification(ModificationType.REPLACE, Const.STATUS, Const.ACTIVE));
-		mods.add(new Modification(ModificationType.REPLACE, Const.USER_PASSWORD, requestData.getString(Const.USER_PASSWORD)));
-		connection.modify(getGlobalIDDn(requestData), mods);
-		log.debug("Password reset");
+		mods.add(new Modification(ModificationType.REPLACE, Const.USER_PASSWORD, password));
+		try {
+			connection.modify(getGlobalIDDn(requestData), mods);
+			log.debug("Password reset");
+		} catch (LDAPException e) {
+			log.error(e);
+			throw new IdentityAPIException(new ErrorMessage(ErrorMessage.GENERIC_LDAP_ERROR));
+		}
 	}
 
 	public static void main(String[] args) {

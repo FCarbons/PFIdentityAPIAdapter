@@ -1,4 +1,4 @@
-package com.pi.pf.idpadapter.identityapiadapter;
+package com.pi.pf.idpadapter.identityapiadapter.handlers;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -10,11 +10,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.sourceid.saml20.adapter.conf.Configuration;
 import org.sourceid.websso.servlet.adapter.Handler;
 
+import com.pi.pf.idpadapter.identityapiadapter.Const;
+import com.pi.pf.idpadapter.identityapiadapter.ErrorMessage;
+import com.pi.pf.idpadapter.identityapiadapter.IdentityAPIException;
 import com.pingidentity.adapters.htmlform.pwdreset.common.Constants;
 import com.pingidentity.adapters.htmlform.pwdreset.model.GeneratedCode;
 import com.unboundid.ldap.sdk.LDAPConnection;
@@ -25,10 +27,11 @@ import com.unboundid.ldap.sdk.SearchResultEntry;
 
 /**
  * Resends the OTP to a previously registered email address.
- * 
  */
 public class ValidationServlet extends AbstractIdentityAPIServlet implements Handler {
-
+	
+	private String[] mandatoryFields = { Const.EMAIL_ATTRIBUTE_NAME };
+	
 	private static final long serialVersionUID = 1L;
 	final Log log = LogFactory.getLog(this.getClass());
 
@@ -43,36 +46,50 @@ public class ValidationServlet extends AbstractIdentityAPIServlet implements Han
 
 		try {
 			JSONObject request = getRequestJSONObject(req);
+			mandadoryFieldsExist(request, mandatoryFields);
 			if (isRegistered(request)) {
 				GeneratedCode generatedCode = generateCode(request);
 				updateCode(request, generatedCode);
 				sendMailCode(request, generatedCode.getCode(),Const.MESSAGE_TEMPLATE_REGISTRATION_HTML);
 			}
 			// always send the same response (even if record does not exist or is in the wrong state)
-			sendResponse(resp, null, HttpServletResponse.SC_CREATED);
-		} catch (Exception e) {
-			sendResponse(resp, null, HttpServletResponse.SC_BAD_REQUEST);
-			log.error("Error creating the new identity", e);
+			sendResponse(resp, getSuccessResponseJSON(), HttpServletResponse.SC_OK);
+		} catch (IdentityAPIException e) {
+			log.error(e);
+			sendResponse(resp, e.getError());
 		}
 		log.debug("*** Exiting handle");
 	}
 
-	private boolean isRegistered(JSONObject requestData) throws LDAPException, JSONException {
-		log.debug("Starting validateRequest");
+	private boolean isRegistered(JSONObject requestData) throws IdentityAPIException{
+		log.debug("Starting isRegistered");
 		LDAPConnection connection = getLDAPConnection();
-		SearchResultEntry result = connection.getEntry(getGlobalIDDn(requestData));
+		SearchResultEntry result;
+		try {
+			result = connection.getEntry(getGlobalIDDn(requestData));
+		} catch (LDAPException e) {
+			log.error(e);
+			throw new IdentityAPIException(new ErrorMessage(ErrorMessage.GENERIC_LDAP_ERROR));
+		}
 		if (result == null || !result.getAttributeValue(Const.STATUS).equalsIgnoreCase(Const.REGISTERED)) {
+			log.debug("User not in status not registered or null");
 			return false;
 		}
+		log.debug("User not in status not registered");
 		return true;
 	}
 
-	private void updateCode(JSONObject requestData, GeneratedCode generatedCode) throws LDAPException, JSONException {
+	private void updateCode(JSONObject requestData, GeneratedCode generatedCode) throws IdentityAPIException {
 		log.debug("Starting updateCode");
 		LDAPConnection connection = getLDAPConnection();
 		JSONObject codeAttributesJson = getCodeAttributesJson(generatedCode);
 		Modification mod = new Modification(ModificationType.REPLACE, Const.CODE, codeAttributesJson.toString());
-		connection.modify(getGlobalIDDn(requestData), mod);
+		try {
+			connection.modify(getGlobalIDDn(requestData), mod);
+		} catch (LDAPException e) {
+			log.error(e);
+			throw new IdentityAPIException(new ErrorMessage(ErrorMessage.GENERIC_LDAP_ERROR));
+		}
 		log.debug("Exiting updateCode");
 	}
 
